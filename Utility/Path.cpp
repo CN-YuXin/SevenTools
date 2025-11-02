@@ -21,7 +21,12 @@ namespace SevenToolsPrivate {
         PathPrivate() = default;
         PathPrivate(const PathPrivate&) = default;
         PathPrivate(PathPrivate&&) = default;
-        PathPrivate(StringView sv): path(sv.data(), sv.size()), pathUtf16(Utf8ToUtf16()) {
+        #if WindowsOS
+        PathPrivate(StringView sv): path(sv.data(), sv.size()), pathUtf16(Utf8ToUtf16())
+        #else
+        PathPrivate(StringView sv): path(sv.data(), sv.size())
+        #endif
+        {
             #if WindowsOS
             ::std::replace(path.begin(), path.end(), '/', '\\');
             #else

@@ -11,6 +11,7 @@ namespace SevenToolsPrivate {
 namespace SevenTools {
     class SevenToolsApi Path {
         SevenToolsPrivate::PathPrivate* pimpl_;
+    public:
         Path();
         Path(const Path&);
         Path(Path&&);
