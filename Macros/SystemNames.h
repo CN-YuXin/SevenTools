@@ -23,4 +23,5 @@
     #define UnixOS true
 #else
     #define SystemName "Unknown"
+    #define UnknownOS
 #endif

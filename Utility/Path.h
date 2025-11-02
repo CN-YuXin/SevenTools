@@ -1,6 +1,7 @@
 #ifndef PathByYx
 #define PathByYx
 
+#include <SymbolVisibility.h>
 #include <StringView.h>
 
 namespace SevenToolsPrivate {
@@ -8,7 +9,7 @@ namespace SevenToolsPrivate {
 }
 
 namespace SevenTools {
-    class Path {
+    class SevenToolsApi Path {
         SevenToolsPrivate::PathPrivate* pimpl_;
         Path();
         Path(const Path&);
@@ -23,8 +24,13 @@ namespace SevenTools {
         bool empty() const noexcept;
 
         bool exists() const noexcept;
+
+        bool isDirectory() const noexcept;
+        bool isFile() const noexcept;
+        bool isSymLink() const noexcept;
         
         static char listSeparator() noexcept;
+        static char separator() noexcept;
 
         ~Path();
     };

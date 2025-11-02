@@ -18,7 +18,7 @@
 
 每个部分在包含头文件时，可以选择性的加上它的前缀，例如 `#include <Macros/CppVersion.h>` 或 `#include <CppVersion>`，它们是等价的
 
-所有库的内容都将放在名为 SevenTools 的命名空间内，所有以 SevenTools 开头的标识符除非另有说明否则总是为内部使用
+所有库的内容都将放在名为 SevenTools 的命名空间内，所有以 SevenTools 开头的标识符除非另有说明否则总是为内部使用(包括其可能存在的成员)
 
 
 除了 Macros 部分外，所有头文件都有用于防重复包含头文件的宏，其格式为:
