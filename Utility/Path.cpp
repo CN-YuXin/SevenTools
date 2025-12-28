@@ -1,11 +1,11 @@
 #include <EnvironmentVariables.h>
 #include <SystemNames.h>
-#include <algorithm>
 #include <Path.h>
-
 #if WindowsOS
 #include <windows.h>
+#include <algorithm>
 #include <shlobj.h>
+#include <cctype>
 #else
 #include <sys/stat.h>
 #include <unistd.h>
@@ -31,10 +31,7 @@ namespace SevenToolsPrivate {
         #endif
         {
             #if WindowsOS
-            if (path.find("\\?") == 0)
-                ::std::replace(path.begin() + 2, path.end(), '/', '\\');
-            else
-                ::std::replace(path.begin(), path.end(), '/', '\\');
+            ::std::replace(path.begin(), path.end(), '/', '\\');
             #endif
         }
 
@@ -57,8 +54,6 @@ namespace SevenToolsPrivate {
             #if WindowsOS
             ::std::replace(path.begin(), path.end(), '/', '\\');
             pathUtf16 = Utf8ToUtf16();
-            #else
-            ::std::replace(path.begin(), path.end(), '\\', '/');
             #endif
             return *this;
         }
@@ -127,6 +122,24 @@ namespace SevenTools {
         struct stat t;
         return lstat(c_str(), &t) == 0;
         #endif
+    }
+    bool Path::isAbsolute() const noexcept {
+        #if WindowsOS
+        return (pimpl_->pathUtf16.size() >= 3
+                and ::std::isalpha(pimpl_->pathUtf16[0])
+                and pimpl_->pathUtf16[1] == L':'
+                and pimpl_->pathUtf16[2] == L'\\')
+            or (pimpl_->pathUtf16.size() >= 2
+                and pimpl_->pathUtf16[0] == L'\\'
+                and pimpl_->pathUtf16[1] == L'\\');
+        #else
+        return pimpl_->path.empty() ? false : pimpl_->path[0] == '/';
+        #endif
+    }
+    bool Path::isRelative() const noexcept {
+        return !isAbsolute();
+    }
+    void Path::clean() noexcept {
     }
 
     bool Path::isDirectory() const noexcept {

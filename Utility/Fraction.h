@@ -116,8 +116,8 @@ namespace SevenTools {
         SevenToolsFractionConstexpr Fraction& operator+=(const Fraction& other) noexcept {
             if (den != other.den) {
                 const T l = lcm(den, other.den);
-                den = l;
                 num = num * (l / den) + other.num * (l / other.den);
+                den = l;
             } else {
                 num += other.num;
             }
@@ -129,8 +129,8 @@ namespace SevenTools {
         SevenToolsFractionConstexpr Fraction& operator-=(const Fraction& other) noexcept {
             if (den != other.den) {
                 const T l = lcm(den, other.den);
-                den = l;
                 num = num * (l / den) - other.num * (l / other.den);
+                den = l;
             } else {
                 num -= other.num;
             }

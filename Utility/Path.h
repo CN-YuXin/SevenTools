@@ -29,6 +29,9 @@ namespace SevenTools {
         bool empty() const noexcept;
 
         bool exists() const noexcept;
+        bool isAbsolute() const noexcept;
+        bool isRelative() const noexcept;
+        void clean() noexcept;
 
         bool isDirectory() const noexcept;
         bool isFile() const noexcept;
