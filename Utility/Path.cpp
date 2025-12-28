@@ -1,12 +1,15 @@
+#include <EnvironmentVariables.h>
 #include <SystemNames.h>
 #include <algorithm>
 #include <Path.h>
 
 #if WindowsOS
 #include <windows.h>
+#include <shlobj.h>
 #else
 #include <sys/stat.h>
 #include <unistd.h>
+#include <pwd.h>
 #endif
 
 namespace SevenToolsPrivate {
@@ -28,9 +31,10 @@ namespace SevenToolsPrivate {
         #endif
         {
             #if WindowsOS
-            ::std::replace(path.begin(), path.end(), '/', '\\');
-            #else
-            ::std::replace(path.begin(), path.end(), '\\', '/');
+            if (path.find("\\?") == 0)
+                ::std::replace(path.begin() + 2, path.end(), '/', '\\');
+            else
+                ::std::replace(path.begin(), path.end(), '/', '\\');
             #endif
         }
 
@@ -62,6 +66,8 @@ namespace SevenToolsPrivate {
         #if WindowsOS
         // for winapi, and sb windows
         ::std::wstring Utf8ToUtf16() {
+            if (path.empty())
+                return L"";
             int buffSize = MultiByteToWideChar(CP_UTF8, 0, path.data(), path.size(), nullptr, 0);
             if (buffSize == 0)
                 return {};
@@ -73,10 +79,21 @@ namespace SevenToolsPrivate {
         #endif
     };
 }
+// TODO: 添加额外函数，例如获取程序的路径，获取存放数据的路径
 using namespace SevenToolsPrivate;
 namespace SevenTools {
     Path::Path(): pimpl_(new PathPrivate) {
     }
+    #if WindowsOS
+    Path::Path(WStringView sv): pimpl_(new PathPrivate) {
+        pimpl_->pathUtf16.assign(sv.data(), sv.size());
+        int buffSize = WideCharToMultiByte(CP_UTF8, 0, sv.data(), sv.size(), nullptr, 0, NULL, NULL);
+        if (buffSize == 0)
+            return;
+        pimpl_->path.resize(buffSize);
+        WideCharToMultiByte(CP_UTF8, 0, sv.data(), sv.size(), pimpl_->path.data(), buffSize, NULL, NULL);
+    }
+    #endif
     Path::Path(const Path& p): pimpl_(new PathPrivate(*p.pimpl_)) {
     }
     Path::Path(Path&& p): pimpl_(new PathPrivate(std::move(*p.pimpl_))) {
@@ -131,6 +148,8 @@ namespace SevenTools {
     bool Path::isSymLink() const noexcept {
         #if WindowsOS
         // sb Windows cnmcnmcnmcnmcnmcnm
+        if (!exists())
+            return false;
         HANDLE le = CreateFileW(
             pimpl_->pathUtf16.c_str(),
             GENERIC_READ,
@@ -140,11 +159,15 @@ namespace SevenTools {
             FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT,
             nullptr
         );
-        if (le == INVALID_HANDLE_VALUE)
+        if (le == INVALID_HANDLE_VALUE) {
+            CloseHandle(le);
             return false;
+        }
         FILE_ATTRIBUTE_TAG_INFO info;
-        if (!GetFileInformationByHandleEx(le, FileAttributeTagInfo, &info, sizeof(info)))
+        if (!GetFileInformationByHandleEx(le, FileAttributeTagInfo, &info, sizeof(info))) {
+            CloseHandle(le);
             return false;
+        }
         CloseHandle(le);
         return info.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT ?
             info.ReparseTag == IO_REPARSE_TAG_SYMLINK :
@@ -170,6 +193,40 @@ namespace SevenTools {
         return '\\';
         #else
         return '/';
+        #endif
+    }
+    Path Path::homePath() noexcept {
+        #if WindowsOS
+        ::std::string str = envGetter("USERPROFILE");
+        if (!str.empty())
+            return {str};
+        // TODO: get home dir by win API
+        PWSTR path;
+        if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &path))) {
+            Path p(path);
+            CoTaskMemFree(path);
+            return p;
+        }
+        return {};
+        #else
+        ::std::string str = envGetter("HOME");
+        if (!str.empty())
+            return {str};
+        uid_t uid = getuid();
+        passwd pw, *r;
+        size_t size = sysconf(_SC_GETPW_R_SIZE_MAX);
+        char* buffer = new char[size != -1 ? size : 1024];
+        while (getpwuid_r(uid, &pw, buffer, size, &r) != 0) {
+            if (size >= 4096) {
+                delete [] buffer;
+                return {};
+            }
+            delete [] buffer;
+            size = size * 2 - size / 2;
+            buffer = new char[size];
+        }
+        delete [] buffer;
+        return {StringView(pw.pw_dir)};
         #endif
     }
 

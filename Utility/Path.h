@@ -9,8 +9,12 @@ namespace SevenToolsPrivate {
 }
 
 namespace SevenTools {
+    // 仅文件系统上的文件路径，不支持 URL 类路径
     class SevenToolsApi Path {
         SevenToolsPrivate::PathPrivate* pimpl_;
+        #if WindowsOS
+        Path(WStringView sv);
+        #endif
     public:
         Path();
         Path(const Path&);
@@ -30,8 +34,9 @@ namespace SevenTools {
         bool isFile() const noexcept;
         bool isSymLink() const noexcept;
         
-        static char listSeparator() noexcept;
-        static char separator() noexcept;
+        SevenToolsApi static char listSeparator() noexcept;
+        SevenToolsApi static char separator() noexcept;
+        SevenToolsApi static Path homePath() noexcept;
 
         ~Path();
     };
